@@ -4,25 +4,29 @@ const { v4 } = require("uuid");
 const todoList = [];
 
 const typeDefs = gql`
-  type Todo {
-    id: String!
-    todo: String!
-  }
-
-  type QueryResponse{
-    success: Boolean!,
-    data: [Todo!]! || Todo!
-  }
-
   type Query {
     getTodos: QueryResponse
   }
 
   type Mutation {
-    addTodo(todo: String!): [Todo!]!
-    updateTodo(todoId: String!, updatedtodo: !String): Todo!
+    addTodo(todo: String): QueryResponse!
+    updateTodo(todoInfo: TodoInfo!): Todo!
   }
 
+  input TodoInfo {
+    id: String!
+    todo: String!
+  }
+
+  type Todo {
+    id: String!
+    todo: String!
+  }
+
+  type QueryResponse {
+    success: Boolean!
+    data: [Todo]!
+  }
 `;
 
 const resolvers = {
@@ -40,23 +44,23 @@ const resolvers = {
         todo,
       };
       todoList.push(createdTodo);
-      return todoList;
+      return {
+        success: true,
+        data: todoList,
+      };
     },
-  },
-  updateTodo: (parent, args, context, info) => {
-    const { todoId, updatedtodo } = args;
+    updateTodo: (parent, args, context, info) => {
+      const { todoId, updatedtodo } = args;
 
-    const toBeUpdatedTodoIndex = todoList.findIndex(
-      (todo) => todo.id === todoId
-    );
-    todoList[toBeUpdatedTodoIndex] = {
-      ...todoList[toBeUpdatedTodoIndex],
-      todo: updatedtodo,
-    };
-    return {
-      success: true,
-      data: todoList[toBeUpdatedTodoIndex],
-    };
+      const toBeUpdatedTodoIndex = todoList.findIndex(
+        (todo) => todo.id === todoId
+      );
+      todoList[toBeUpdatedTodoIndex] = {
+        ...todoList[toBeUpdatedTodoIndex],
+        todo: updatedtodo,
+      };
+      return todoList[toBeUpdatedTodoIndex];
+    },
   },
 };
 
