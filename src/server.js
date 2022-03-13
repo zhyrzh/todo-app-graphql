@@ -9,18 +9,28 @@ const typeDefs = gql`
     todo: String!
   }
 
+  type QueryResponse{
+    success: Boolean!,
+    data: [Todo!]! || Todo!
+  }
+
   type Query {
-    getTodo: [Todo!]!
+    getTodos: QueryResponse
   }
 
   type Mutation {
     addTodo(todo: String!): [Todo!]!
+    updateTodo(todoId: String!, updatedtodo: !String): Todo!
   }
+
 `;
 
 const resolvers = {
   Query: {
-    getTodo: () => todoList,
+    getTodos: () => ({
+      success: true,
+      data: todoList,
+    }),
   },
   Mutation: {
     addTodo: (parents, args, context, info) => {
@@ -32,6 +42,21 @@ const resolvers = {
       todoList.push(createdTodo);
       return todoList;
     },
+  },
+  updateTodo: (parent, args, context, info) => {
+    const { todoId, updatedtodo } = args;
+
+    const toBeUpdatedTodoIndex = todoList.findIndex(
+      (todo) => todo.id === todoId
+    );
+    todoList[toBeUpdatedTodoIndex] = {
+      ...todoList[toBeUpdatedTodoIndex],
+      todo: updatedtodo,
+    };
+    return {
+      success: true,
+      data: todoList[toBeUpdatedTodoIndex],
+    };
   },
 };
 
