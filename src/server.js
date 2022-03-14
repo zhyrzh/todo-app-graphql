@@ -1,7 +1,7 @@
 const { ApolloServer, gql } = require("apollo-server");
 const { v4 } = require("uuid");
 
-const todoList = [];
+let todoList = [];
 
 const typeDefs = gql`
   type Query {
@@ -11,6 +11,8 @@ const typeDefs = gql`
   type Mutation {
     addTodo(todo: String): QueryResponse!
     updateTodo(todoInfo: TodoInfo!): Todo!
+    deleteTodo(todoInfo: TodoInfo!): Todo!
+    getSpecificTodo(todoInfo: TodoInfo!): Todo!
   }
 
   input TodoInfo {
@@ -25,7 +27,7 @@ const typeDefs = gql`
 
   type QueryResponse {
     success: Boolean!
-    data: [Todo]!
+    data: [Todo!]!
   }
 `;
 
@@ -37,21 +39,27 @@ const resolvers = {
     }),
   },
   Mutation: {
+    getSpecificTodo: (parents, args, context, info) => {
+      const { todoId } = args;
+      const todoIndex = todoList.findIndex((todo) => todo.id === todoId);
+      return todoList[todoIndex];
+    },
     addTodo: (parents, args, context, info) => {
       const { todo } = args;
+      const todoId = v4();
       const createdTodo = {
-        id: v4(),
+        id: todoId,
         todo,
       };
       todoList.push(createdTodo);
+      const data = todoList.filter((todo) => todo.id === todoId);
       return {
         success: true,
-        data: todoList,
+        data,
       };
     },
     updateTodo: (parent, args, context, info) => {
       const { todoId, updatedtodo } = args;
-
       const toBeUpdatedTodoIndex = todoList.findIndex(
         (todo) => todo.id === todoId
       );
@@ -60,6 +68,12 @@ const resolvers = {
         todo: updatedtodo,
       };
       return todoList[toBeUpdatedTodoIndex];
+    },
+    deleteTodo: (parent, args, context, info) => {
+      const { todoId, updatedtodo } = args;
+      const updatedTodoList = todoList.filter((todo) => todo.id !== todoId);
+      todoList = updatedTodoList;
+      return todoList;
     },
   },
 };
