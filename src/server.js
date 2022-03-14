@@ -25,9 +25,11 @@ const typeDefs = gql`
     todo: String!
   }
 
+  union QueryResponseData = Todo | String
+
   type QueryResponse {
     success: Boolean!
-    data: [Todo!]!
+    data: QueryResponseData
   }
 `;
 
