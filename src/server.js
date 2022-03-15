@@ -5,14 +5,14 @@ let todoList = [];
 
 const typeDefs = gql`
   type Query {
-    getTodos: QueryResponse
+    getTodos: ResponseData
   }
 
   type Mutation {
-    addTodo(todo: String): QueryResponse!
-    updateTodo(todoInfo: TodoInfo!): Todo!
-    deleteTodo(todoInfo: TodoInfo!): Todo!
-    getSpecificTodo(todoInfo: TodoInfo!): Todo!
+    addTodo(todo: String): ResponseData!
+    updateTodo(todoInfo: TodoInfo!): ResponseData!
+    deleteTodo(todoInfo: TodoInfo!): ResponseData!
+    getSpecificTodo(todoInfo: TodoInfo!): ResponseData!
   }
 
   input TodoInfo {
@@ -25,11 +25,16 @@ const typeDefs = gql`
     todo: String!
   }
 
-  union QueryResponseData = Todo | String
+  union ResponseData = SuccessResponse | ErrorResponse
 
-  type QueryResponse {
+  type SuccessResponse {
     success: Boolean!
-    data: QueryResponseData
+    data: [Todo]!
+  }
+
+  type ErrorResponse {
+    success: Boolean!
+    data: String
   }
 `;
 
@@ -43,39 +48,80 @@ const resolvers = {
   Mutation: {
     getSpecificTodo: (parents, args, context, info) => {
       const { todoId } = args;
+      let isSuccessful;
+      let data;
       const todoIndex = todoList.findIndex((todo) => todo.id === todoId);
-      return todoList[todoIndex];
+      if (todoIndex <= -1) {
+        isSuccessful = false;
+        data = "Todo not found";
+      } else {
+        isSuccessful = true;
+        data = todoList[todoIndex];
+      }
+      return { success: isSuccessful, data };
     },
     addTodo: (parents, args, context, info) => {
       const { todo } = args;
+      let success;
+      let data;
       const todoId = v4();
       const createdTodo = {
         id: todoId,
         todo,
       };
       todoList.push(createdTodo);
-      const data = todoList.filter((todo) => todo.id === todoId);
+      const addedTodo = todoList.filter((todo) => todo.id === todoId);
+
+      if (!addedTodo) {
+        success = false;
+        data = "Todo not added";
+      } else {
+        success = true;
+        data = addedTodo;
+      }
+
       return {
-        success: true,
+        success,
         data,
       };
     },
     updateTodo: (parent, args, context, info) => {
       const { todoId, updatedtodo } = args;
+      let success;
+      let data;
       const toBeUpdatedTodoIndex = todoList.findIndex(
         (todo) => todo.id === todoId
       );
-      todoList[toBeUpdatedTodoIndex] = {
-        ...todoList[toBeUpdatedTodoIndex],
-        todo: updatedtodo,
-      };
-      return todoList[toBeUpdatedTodoIndex];
+
+      if (toBeUpdatedTodoIndex <= -1) {
+        (success = false), (data = "Failed to update todo. Todo not found.");
+      } else {
+        todoList[toBeUpdatedTodoIndex] = {
+          ...todoList[toBeUpdatedTodoIndex],
+          todo: updatedtodo,
+        };
+        success = true;
+        data = todoList[toBeUpdatedTodoIndex];
+      }
+
+      return { success, data };
     },
     deleteTodo: (parent, args, context, info) => {
-      const { todoId, updatedtodo } = args;
-      const updatedTodoList = todoList.filter((todo) => todo.id !== todoId);
-      todoList = updatedTodoList;
-      return todoList;
+      const { todoId } = args;
+      let success;
+      let data;
+      const toBeDeletedTodoIndex = todoList.findIndex(
+        (todo) => todo.id === todoId
+      );
+      if (toBeDeletedTodoIndex <= -1) {
+        success = false;
+        data = "Failed to delete todo. Todo not found.";
+      } else {
+        const updatedTodoList = todoList.filter((todo) => todo.id !== todoId);
+        todoList = updatedTodoList;
+      }
+
+      return { success, data };
     },
   },
 };
